@@ -15,7 +15,7 @@
     ></DiscussionCard>
 
     <v-row justify="space-around" style="margin: 20px 0; width =100%">
-      <v-dialog v-model="dialog" persistent max-width="600px">
+      <v-dialog v-model="showPassWdDialog" persistent max-width="600px">
         <template v-slot:activator="{ on, attrs }">
           <v-btn color="primary" width="40%" v-bind="attrs" v-on="on">
             修改密码
@@ -28,8 +28,16 @@
           <v-card-text>
             <v-form>
               <v-text-field
+                v-model="email"
+                :rules="passwordRules"
+                label="邮箱"
+                required
+              ></v-text-field>
+
+              <v-text-field
                 v-model="newPassWd"
                 :rules="passwordRules"
+                type="password"
                 label="新密码"
                 required
               ></v-text-field>
@@ -58,6 +66,22 @@
                   </v-btn>
                 </v-col>
               </v-row>
+
+              <v-row>
+                <v-col cols="6"
+                  ><v-btn
+                    color="error"
+                    @click="closeChangePassWdDialog"
+                    width="100%"
+                    >取消</v-btn
+                  ></v-col
+                >
+                <v-col cols="6"
+                  ><v-btn color="success" @click="changePassWd" width="100%"
+                    >修改密码</v-btn
+                  ></v-col
+                >
+              </v-row>
             </v-form>
           </v-card-text>
         </v-card>
@@ -78,8 +102,10 @@ export default {
   data() {
     return {
       profile: {},
+      email: '',
       showPassWdDialog: false,
       newPassWd: '',
+      code: '',
       codeRules: [
         (v) => !!v || '内容不能为空',
         (v) => /^[0-9]{6}$/.test(v) || '验证码格式不对',
@@ -100,7 +126,7 @@ export default {
       this.$axios
         .get('register/', {
           params: {
-            username: this.username,
+            username: localStorage.username,
             email: this.email,
             usage: 'change_password',
           },
@@ -132,7 +158,7 @@ export default {
           this.profile = r.data
         })
         .catch((e) => {
-          this.$refs.message.error(e.r.data.msg)
+          this.$refs.message.error(e.response.data.msg)
         })
     },
     logout() {
@@ -143,7 +169,28 @@ export default {
     },
     getEmailAuthCode() {},
     changePassWd() {
-      alert('还没写完')
+      this.$axios
+        .put('/register/', {
+          params: {
+            username: localStorage.username,
+            password: this.newPassWd,
+            code: this.code,
+          },
+        })
+        .then((r) => {
+          localStorage.setItem('token', 'Token ' + r.data.token)
+          this.closeChangePassWdDialog()
+          this.$refs.message.success('密码重置成功！')
+        })
+        .catch((e) => {
+          this.$refs.message.error(e.response.data.msg)
+        })
+    },
+    closeChangePassWdDialog() {
+      this.showPassWdDialog = false
+      this.email = ''
+      this.code = ''
+      this.newPassWd = ''
     },
   },
   watch: {
